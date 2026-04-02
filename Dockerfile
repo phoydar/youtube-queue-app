@@ -18,7 +18,6 @@ RUN npm run build -- --no-lint
 # --- Production ---
 FROM base AS runner
 ENV NODE_ENV=production
-ENV PORT=3000
 
 # Don't run as root
 RUN addgroup --system --gid 1001 nodejs && \
@@ -40,6 +39,5 @@ COPY --from=build --chown=nextjs:nodejs /app/start.sh ./
 RUN chmod +x start.sh
 
 USER nextjs
-EXPOSE 3000
 
 CMD ["./start.sh"]
