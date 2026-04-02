@@ -9,14 +9,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   // Total videos
   const totalResult = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: sql<number>`cast(count(*) as integer)` })
     .from(videos)
     .where(eq(videos.unavailable, false));
   const totalVideos = totalResult[0]?.count ?? 0;
 
   // Unwatched count
   const unwatchedResult = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: sql<number>`cast(count(*) as integer)` })
     .from(videos)
     .where(and(eq(videos.watched, false), eq(videos.unavailable, false)));
   const unwatchedCount = unwatchedResult[0]?.count ?? 0;
@@ -24,12 +24,12 @@ export async function GET() {
   // Watched this week
   const oneWeekAgo = subDays(new Date(), 7);
   const watchedThisWeekResult = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: sql<number>`cast(count(*) as integer)` })
     .from(videos)
     .where(
       and(
         eq(videos.watched, true),
-        sql`${videos.watchedAt} >= ${Math.floor(oneWeekAgo.getTime() / 1000)}`
+        sql`${videos.watchedAt} >= ${oneWeekAgo}`
       )
     );
   const watchedThisWeek = watchedThisWeekResult[0]?.count ?? 0;

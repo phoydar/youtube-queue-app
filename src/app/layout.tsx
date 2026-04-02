@@ -5,6 +5,13 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Queue',
   description: 'Your prioritized YouTube watch queue',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({
