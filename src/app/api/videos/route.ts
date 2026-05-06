@@ -133,12 +133,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Map and score
-  let result = rows.map((v) => ({
-    ...v,
-    tags: videoTagsMap[v.id] || [],
-    score: calculateScore(v.priority as Priority, v.addedAt!),
-  }));
+  // Map and score. Strip heavy AI fields (embedding vector, full transcript)
+  // that should never travel over the wire in list responses.
+  let result = rows.map((v) => {
+    const { embedding, transcript, ...rest } = v;
+    return {
+      ...rest,
+      tags: videoTagsMap[v.id] || [],
+      score: calculateScore(v.priority as Priority, v.addedAt!),
+    };
+  });
 
   // Sort by score if requested
   if (sort === 'score') {

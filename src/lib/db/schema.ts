@@ -1,5 +1,28 @@
-import { pgTable, text, integer, boolean, timestamp, primaryKey, index, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, timestamp, primaryKey, index, uniqueIndex, varchar, real, customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+
+/**
+ * Custom pgvector type for Drizzle.
+ * Stores as the Postgres `vector(N)` type provided by the pgvector extension.
+ * JS value is a plain number[]; we serialize to the pgvector "[1,2,3]" literal.
+ */
+export const vector = (name: string, config: { dimensions: number }) =>
+  customType<{ data: number[]; driverData: string }>({
+    dataType() {
+      return `vector(${config.dimensions})`;
+    },
+    toDriver(value: number[]): string {
+      return `[${value.join(',')}]`;
+    },
+    fromDriver(value: string): number[] {
+      // pgvector returns text like "[1,2,3]"
+      if (typeof value !== 'string') return value as unknown as number[];
+      return value
+        .replace(/^\[|\]$/g, '')
+        .split(',')
+        .map((n) => Number(n));
+    },
+  })(name);
 
 export const playlists = pgTable('playlists', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -31,10 +54,40 @@ export const videos = pgTable('videos', {
   addedAt: timestamp('added_at').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  // AI integration fields
+  description: text('description'),
+  transcript: text('transcript'),
+  transcriptSource: text('transcript_source', { enum: ['youtube', 'description_fallback', 'none'] }),
+  summary: text('summary'),
+  keyTopics: text('key_topics').array(),
+  embedding: vector('embedding', { dimensions: 512 }),
+  aiProcessedAt: timestamp('ai_processed_at'),
+  aiError: text('ai_error'),
 }, (table) => ({
   watchedIdx: index('idx_video_watched').on(table.watched),
   priorityIdx: index('idx_video_priority').on(table.priority),
   addedAtIdx: index('idx_video_added_at').on(table.addedAt),
+  aiProcessedIdx: index('idx_video_ai_processed').on(table.aiProcessedAt),
+}));
+
+export const videoClusters = pgTable('video_clusters', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  label: text('label').notNull(),
+  description: text('description').default(''),
+  centroid: vector('centroid', { dimensions: 512 }),
+  videoCount: integer('video_count').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const videoClusterMembers = pgTable('video_cluster_members', {
+  clusterId: text('cluster_id').notNull().references(() => videoClusters.id, { onDelete: 'cascade' }),
+  videoId: text('video_id').notNull().references(() => videos.id, { onDelete: 'cascade' }),
+  similarity: real('similarity').notNull().default(0),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.clusterId, table.videoId] }),
+  videoIdx: index('idx_cluster_member_video').on(table.videoId),
+  clusterIdx: index('idx_cluster_member_cluster').on(table.clusterId),
 }));
 
 export const tags = pgTable('tags', {

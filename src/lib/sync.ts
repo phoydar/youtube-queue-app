@@ -3,6 +3,9 @@ import { playlists, videos, playlistVideos, syncLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { fetchPlaylistItems, fetchVideoDetails } from '@/lib/youtube/youtube-service';
 import { mapToVideoInsert } from '@/lib/youtube/youtube-mapper';
+import { processVideosBatch } from '@/lib/ai/pipeline';
+import { isAnthropicConfigured } from '@/lib/ai/anthropic-client';
+import { isVoyageConfigured } from '@/lib/ai/voyage-client';
 import type { SyncResult } from '@/types';
 
 /**
@@ -28,6 +31,7 @@ export async function syncPlaylist(playlistId: string): Promise<SyncResult> {
   let added = 0;
   let updated = 0;
   let unavailableCount = 0;
+  const newVideoIds: string[] = [];
 
   try {
     // Fetch all items from YouTube
@@ -80,6 +84,7 @@ export async function syncPlaylist(playlistId: string): Promise<SyncResult> {
         });
         videoId = newId;
         added++;
+        newVideoIds.push(newId);
       }
 
       // Upsert playlist-video relationship
@@ -121,6 +126,14 @@ export async function syncPlaylist(playlistId: string): Promise<SyncResult> {
       startedAt,
       completedAt: new Date(),
     });
+
+    // Fire-and-forget AI processing for newly added videos.
+    // Gracefully no-ops if AI API keys are not configured.
+    if (newVideoIds.length > 0 && isAnthropicConfigured() && isVoyageConfigured()) {
+      void processVideosBatch(newVideoIds, { concurrency: 2 }).catch((err) => {
+        console.error('[sync] AI post-processing failed:', err);
+      });
+    }
 
     return {
       playlistId: playlist.id,

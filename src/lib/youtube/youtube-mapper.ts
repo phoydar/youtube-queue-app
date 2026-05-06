@@ -62,5 +62,7 @@ export function mapToVideoInsert(
       ? parseDuration(videoDetails.contentDetails.duration)
       : 0,
     publishedAt: new Date(playlistItem.snippet.publishedAt),
+    description:
+      videoDetails?.snippet.description ?? playlistItem.snippet.description ?? null,
   };
 }

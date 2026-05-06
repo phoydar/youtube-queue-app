@@ -2,6 +2,8 @@ export type Priority = 'HIGH' | 'MEDIUM' | 'LOW';
 export type WatchStatus = 'UNWATCHED' | 'IN_PROGRESS' | 'WATCHED';
 export type SyncStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
 
+export type TranscriptSource = 'youtube' | 'description_fallback' | 'none';
+
 export interface Video {
   id: string;
   youtubeVideoId: string;
@@ -22,6 +24,26 @@ export interface Video {
   addedAt: Date;
   tags?: Tag[];
   score?: number;
+  // AI fields
+  description?: string | null;
+  summary?: string | null;
+  keyTopics?: string[] | null;
+  transcriptSource?: TranscriptSource | null;
+  aiProcessedAt?: Date | null;
+  aiError?: string | null;
+}
+
+export interface VideoCluster {
+  id: string;
+  label: string;
+  description: string;
+  videoCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface VideoClusterWithMembers extends VideoCluster {
+  members: Array<Video & { similarity: number }>;
 }
 
 export interface Tag {

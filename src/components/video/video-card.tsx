@@ -12,6 +12,8 @@ import {
   Play,
   StickyNote,
   X,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { cn, formatDuration, timeAgo } from '@/lib/utils';
 import type { Priority, WatchStatus } from '@/types';
@@ -34,6 +36,10 @@ interface VideoCardProps {
     addedAt: Date | string;
     score?: number;
     tags?: { id: string; name: string; color: string }[];
+    summary?: string | null;
+    keyTopics?: string[] | null;
+    aiProcessedAt?: Date | string | null;
+    aiError?: string | null;
   };
   selectable?: boolean;
   selected?: boolean;
@@ -55,6 +61,9 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(video.notes || '');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const hasSummary = Boolean(video.summary);
   const priorityCfg = PRIORITY_CONFIG[video.priority];
   const watchStatus = video.watchStatus || (video.watched ? 'WATCHED' : 'UNWATCHED');
 
@@ -83,6 +92,16 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
       WATCHED: 'UNWATCHED',
     };
     updateVideo({ watchStatus: cycle[watchStatus] });
+  }
+
+  async function reprocessAi() {
+    setReprocessing(true);
+    try {
+      await fetch(`/api/ai/videos/${video.id}/process?force=true`, { method: 'POST' });
+      onUpdate?.();
+    } finally {
+      setReprocessing(false);
+    }
   }
 
   async function saveNotes() {
@@ -219,6 +238,33 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
               <Check className="h-4 w-4 text-emerald-400" />
             )}
           </button>
+          {hasSummary && (
+            <button
+              onClick={() => setShowSummary(!showSummary)}
+              title="AI summary"
+              className={cn(
+                'rounded-md p-1.5 transition-colors hover:bg-secondary',
+                showSummary && 'bg-secondary'
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+            </button>
+          )}
+          {!hasSummary && video.aiError && (
+            <button
+              onClick={reprocessAi}
+              disabled={reprocessing}
+              title={`AI error: ${video.aiError}`}
+              className="rounded-md p-1.5 transition-colors hover:bg-secondary"
+            >
+              <RefreshCw
+                className={cn(
+                  'h-3.5 w-3.5 text-red-400',
+                  reprocessing && 'animate-spin'
+                )}
+              />
+            </button>
+          )}
           <button
             onClick={() => setShowNotes(!showNotes)}
             title="Notes"
@@ -266,6 +312,37 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
                 {savingNotes ? 'Saving...' : 'Save'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI summary panel */}
+      {showSummary && hasSummary && (
+        <div className="ml-[144px] border-t border-border/50 pb-3 pt-2">
+          {video.keyTopics && video.keyTopics.length > 0 && (
+            <div className="mb-1.5 flex flex-wrap gap-1">
+              {video.keyTopics.map((topic) => (
+                <span
+                  key={topic}
+                  className="rounded bg-violet-500/10 px-1.5 py-0.5 text-[10px] text-violet-300"
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">
+            {video.summary}
+          </p>
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <button
+              onClick={reprocessAi}
+              disabled={reprocessing}
+              className="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+            >
+              <RefreshCw className={cn('h-3 w-3', reprocessing && 'animate-spin')} />
+              {reprocessing ? 'Re-processing...' : 'Re-process'}
+            </button>
           </div>
         </div>
       )}

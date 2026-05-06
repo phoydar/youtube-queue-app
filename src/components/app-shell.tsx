@@ -20,6 +20,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <nav className="flex items-center gap-2">
               <ThemeToggle />
               <a
+                href="/clusters"
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary"
+              >
+                Clusters
+              </a>
+              <a
                 href="/settings"
                 className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary"
               >
