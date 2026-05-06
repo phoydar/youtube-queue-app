@@ -6,18 +6,21 @@
 |-------|--------|-----------|
 | **Framework** | Next.js 14+ (App Router) | You already know React/Next.js. App Router gives us Server Components for fast data fetching, API Routes for the backend, and a single deployable unit. No need for a separate NestJS backend — this is a personal tool, not an enterprise API. |
 | **Language** | TypeScript | Non-negotiable for a solo dev. Catches bugs at compile time, self-documents the codebase. |
-| **Database** | SQLite via Prisma | Zero ops overhead. No database server to manage. Prisma gives you type-safe queries and migrations. For a single-user app with maybe 1,000-5,000 videos, SQLite handles this without breaking a sweat. |
-| **ORM** | Prisma | Type-safe database access, auto-generated client, clean migration story. Pairs perfectly with TypeScript. |
+| **Database** | PostgreSQL with `pgvector` | Started on SQLite, migrated to Postgres once the AI pipeline needed semantic search over video embeddings. `pgvector` gives us a `vector(512)` column type and cosine-similarity operators inside the same DB the rest of the app already uses — no separate vector store. |
+| **ORM** | Drizzle ORM (`drizzle-orm` + `pg`) | Type-safe queries with a SQL-shaped API. Plays well with custom Postgres types like `vector`, which Prisma did not at the time of the migration. |
+| **AI** | Anthropic Claude (summaries) + Voyage AI (embeddings) | Claude generates short summaries and key topics from transcripts; Voyage produces 512-dim embeddings used for greedy agglomerative cosine clustering. Both are optional — without keys the AI pipeline no-ops. |
 | **Styling** | Tailwind CSS | Fast to build with, responsive out of the box, no CSS architecture decisions needed. You can make it look good without a design system. |
 | **UI Components** | shadcn/ui | Copy-paste component library built on Radix primitives. Gives you accessible, well-designed components (dialogs, dropdowns, toasts, data tables) without a heavy dependency. |
 | **Deployment** | Vercel | Best-in-class Next.js hosting. Free tier covers this use case. Edge Functions for API routes. Cron jobs for scheduled sync. |
 | **External API** | YouTube Data API v3 | Only external dependency. API key for public playlists. |
 
-### Why Not NestJS + PostgreSQL?
+### Why Not NestJS?
 
-Your usual stack is overkill here. NestJS shines for multi-developer enterprise APIs with complex business logic, dependency injection, and microservice patterns. YouTube Queue is a single-user CRUD app with one external integration. The overhead of maintaining two deployable services (frontend + backend) and a managed PostgreSQL instance isn't justified. Next.js API Routes give you everything you need in one codebase, one deployment.
+Your usual stack is overkill here. NestJS shines for multi-developer enterprise APIs with complex business logic, dependency injection, and microservice patterns. YouTube Queue is a single-user CRUD app with one external integration. The overhead of maintaining two deployable services (frontend + backend) isn't justified. Next.js API Routes give you everything you need in one codebase, one deployment.
 
-If this ever grows beyond personal use, migrating from SQLite to PostgreSQL via Prisma is a schema change + connection string swap — not a rewrite.
+### History: SQLite → PostgreSQL
+
+The original plan was SQLite + Prisma. That was fine until the AI pipeline landed and we needed vector similarity search over video embeddings. Migrating to PostgreSQL + Drizzle (with `pgvector`) was cheaper than bolting an external vector store onto a SQLite app. A `npm run db:bootstrap` script installs the `pgvector` extension on a fresh database before `db:push`.
 
 ---
 
@@ -31,25 +34,28 @@ graph TB
             API[API Routes<br/>/api/*]
             CRON[Cron Handler<br/>/api/sync]
         end
-        DB[(SQLite<br/>via Prisma)]
+        DB[(PostgreSQL<br/>+ pgvector<br/>via Drizzle)]
     end
 
     YT[YouTube Data API v3]
+    AI[Anthropic + Voyage AI]
     BROWSER[Browser]
 
     BROWSER -->|HTTPS| UI
     UI -->|Server Actions / fetch| API
-    API -->|Prisma Client| DB
-    CRON -->|Prisma Client| DB
+    API -->|Drizzle / pg| DB
+    CRON -->|Drizzle / pg| DB
     API -->|REST| YT
     CRON -->|REST| YT
+    CRON -->|summarize + embed| AI
     UI -->|Opens in new tab| YT
 
     style DB fill:#f9f,stroke:#333
     style YT fill:#ff6b6b,stroke:#333
+    style AI fill:#fbb,stroke:#333
 ```
 
-**Data flow is dead simple:** Browser → Next.js (serves UI + handles API) → SQLite for persistence, YouTube API for sync. No queues, no cache layers, no message brokers. One process, one database file.
+**Data flow:** Browser → Next.js (serves UI + handles API) → PostgreSQL for persistence, YouTube API for sync. After sync, new videos are processed asynchronously by the AI pipeline (transcript → summary → embedding → cluster) when API keys are configured. No queues, no cache layers, no message brokers.
 
 ---
 
@@ -276,7 +282,7 @@ src/
 This is a personal app with one user and a few thousand records max. Performance is not a concern. That said, a few free wins:
 
 - **Server Components by default.** Dashboard data fetching happens on the server — no client-side loading spinners for the initial render.
-- **SQLite is fast.** Reads from a local file. No network hop to a database server. Sub-millisecond queries at this scale.
+- **PostgreSQL is fast at this scale.** Indexed queries on a few thousand rows return in single-digit milliseconds; `pgvector` cosine search over 512-dim embeddings is comfortably under 100ms for the personal-use corpus size.
 - **Thumbnail images are YouTube-hosted.** No image optimization needed — use `next/image` with YouTube's CDN URLs.
 - **Pagination on the video list.** Don't load 2,000 videos into the DOM. Paginate or virtualize.
 - **Debounced sync.** Don't let the user spam the sync button. Debounce and show the last sync time.

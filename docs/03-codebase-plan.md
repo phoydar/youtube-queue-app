@@ -1,5 +1,7 @@
 # YouTube Queue — Codebase Plan
 
+> **Note:** This document captures the original plan and references SQLite + Prisma throughout. The project has since migrated to **PostgreSQL + Drizzle ORM with pgvector** to support the AI pipeline. Treat the Prisma snippets, file paths (`prisma/schema.prisma`, `lib/db.ts`), and `DATABASE_URL=file:./dev.db` examples below as historical. See [02-technical-architecture.md](./02-technical-architecture.md) and the README for the current stack.
+
 ## Project Structure
 
 ```

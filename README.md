@@ -6,15 +6,18 @@ A personal web app that syncs YouTube playlists and turns them into a prioritize
 
 - **Framework:** Next.js 14 (App Router)
 - **Language:** TypeScript
-- **Database:** SQLite via Drizzle ORM + libSQL
+- **Database:** PostgreSQL with pgvector via Drizzle ORM
 - **Styling:** Tailwind CSS
 - **API:** YouTube Data API v3
+- **AI:** Anthropic Claude (summaries) + Voyage AI (512-dim embeddings)
 - **Deployment:** Vercel
 
 ## Prerequisites
 
 - Node.js 20+
+- PostgreSQL 14+ with the `pgvector` extension available
 - A Google Cloud project with YouTube Data API v3 enabled
+- (Optional) Anthropic + Voyage AI API keys for the AI pipeline
 
 ## Getting a YouTube API Key
 
@@ -46,12 +49,16 @@ Edit `.env.local` with your values:
 
 ```bash
 YOUTUBE_API_KEY=your-actual-api-key-here
-DATABASE_URL="file:./data/youtube-queue.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/youtube_queue"
+
+# Optional — enables transcript summaries, embeddings, and clustering
+ANTHROPIC_API_KEY=
+VOYAGE_API_KEY=
 ```
 
 ```bash
-# 4. Create the data directory and push the database schema
-mkdir -p data
+# 4. Install pgvector + push the schema
+npm run db:bootstrap   # CREATE EXTENSION IF NOT EXISTS vector;
 npm run db:push
 
 # 5. Start the dev server
@@ -76,7 +83,8 @@ The app is now running at [http://localhost:3000](http://localhost:3000).
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 | `npm run format` | Format code with Prettier |
-| `npm run db:push` | Push schema changes to SQLite |
+| `npm run db:bootstrap` | Install the pgvector extension on the target DB |
+| `npm run db:push` | Push schema changes to PostgreSQL |
 | `npm run db:generate` | Generate Drizzle migration files |
 | `npm run db:migrate` | Run pending migrations |
 | `npm run db:studio` | Open Drizzle Studio (DB browser) |

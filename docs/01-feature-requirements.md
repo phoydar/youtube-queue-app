@@ -120,7 +120,7 @@
 - [ ] Combinable with tag filters
 **Dependencies:** None
 **Complexity:** Low
-**Notes:** SQLite FTS5 makes this trivial to implement.
+**Notes:** Implementable via PostgreSQL full-text search (`tsvector` + GIN index). Semantic search across titles/summaries is also possible via the existing pgvector embeddings.
 
 ---
 
