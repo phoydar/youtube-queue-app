@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Trash2, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { TagBadge } from '@/components/tags/tag-badge';
+import { Plus, Trash2, RefreshCw, X } from 'lucide-react';
 
 interface Playlist {
   id: string;
@@ -25,7 +23,7 @@ export default function SettingsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [newPlaylistId, setNewPlaylistId] = useState('');
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#e09f3e');
+  const [newTagColor, setNewTagColor] = useState('#2c5fa8');
   const [addingPlaylist, setAddingPlaylist] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,19 +44,16 @@ export default function SettingsPage() {
     if (!newPlaylistId.trim()) return;
     setAddingPlaylist(true);
     setError(null);
-
     try {
       const res = await fetch('/api/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ youtubePlaylistId: newPlaylistId.trim() }),
       });
-
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to add playlist');
       }
-
       setNewPlaylistId('');
       fetchData();
     } catch (e) {
@@ -80,13 +75,11 @@ export default function SettingsPage() {
 
   async function addTag() {
     if (!newTagName.trim()) return;
-
     const res = await fetch('/api/tags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newTagName.trim(), color: newTagColor }),
     });
-
     if (res.ok) {
       setNewTagName('');
       fetchData();
@@ -98,119 +91,131 @@ export default function SettingsPage() {
     fetchData();
   }
 
+  function formatSynced(at: string | null) {
+    if (!at) return 'never';
+    return new Date(at).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
   return (
-    <div className="max-w-2xl space-y-8">
-      <h2 className="text-lg font-semibold text-foreground">Settings</h2>
-
-      {/* Playlists */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Playlists</h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newPlaylistId}
-            onChange={(e) => setNewPlaylistId(e.target.value)}
-            placeholder="YouTube Playlist ID"
-            className="flex-1 border-0 border-b border-border bg-transparent px-1 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50 focus:outline-none transition-colors"
-            onKeyDown={(e) => e.key === 'Enter' && addPlaylist()}
-          />
-          <button
-            onClick={addPlaylist}
-            disabled={addingPlaylist}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80',
-              addingPlaylist && 'cursor-not-allowed opacity-60'
-            )}
-          >
-            <Plus className="h-3 w-3" />
-            Add
-          </button>
+    <>
+      <div className="cw-page-head">
+        <div>
+          <h1>Settings</h1>
+          <p className="sub">Sources, tags, and how Queue syncs.</p>
         </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+      </div>
 
-        {playlists.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No playlists added yet.
-          </p>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {playlists.map((pl) => (
-              <div
-                key={pl.id}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">{pl.title}</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {pl.videoCount} videos
-                    {pl.lastSyncedAt && ` \u00b7 Synced ${new Date(pl.lastSyncedAt).toLocaleString()}`}
-                  </p>
-                </div>
-                <div className="flex gap-0.5">
-                  <button
-                    onClick={() => syncPlaylist(pl.id)}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    title="Sync"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => removePlaylist(pl.id)}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    title="Remove"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+      <div className="cw-settings">
+        <section>
+          <h3 className="cw-section-eyebrow">Playlists</h3>
+          <div className="cw-settings-row">
+            <input
+              className="cw-line-input"
+              value={newPlaylistId}
+              onChange={(e) => setNewPlaylistId(e.target.value)}
+              placeholder="YouTube playlist URL or ID"
+              onKeyDown={(e) => e.key === 'Enter' && addPlaylist()}
+            />
+            <button className="cw-btn-ghost" onClick={addPlaylist} disabled={addingPlaylist}>
+              <Plus size={12} />
+              {addingPlaylist ? 'Adding…' : 'Add a source'}
+            </button>
           </div>
-        )}
-      </section>
+          {error && <div className="cw-banner error" style={{ marginBottom: 12 }}>{error}</div>}
 
-      {/* Tags */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tags</h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
-            placeholder="Tag name"
-            className="flex-1 border-0 border-b border-border bg-transparent px-1 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary/50 focus:outline-none transition-colors"
-            onKeyDown={(e) => e.key === 'Enter' && addTag()}
-          />
-          <input
-            type="color"
-            value={newTagColor}
-            onChange={(e) => setNewTagColor(e.target.value)}
-            className="h-8 w-8 cursor-pointer rounded border border-border bg-transparent"
-          />
-          <button
-            onClick={addTag}
-            className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80"
-          >
-            <Plus className="h-3 w-3" />
-            Add
-          </button>
-        </div>
+          {playlists.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--fg-3)', margin: 0 }}>
+              No playlists added yet.
+            </p>
+          ) : (
+            <div>
+              {playlists.map((pl) => (
+                <div key={pl.id} className="cw-source">
+                  <div>
+                    <div className="cw-source-name">{pl.title}</div>
+                    <div className="cw-source-meta">
+                      {pl.videoCount} clips · synced {formatSynced(pl.lastSyncedAt)}
+                    </div>
+                  </div>
+                  <div className="actions">
+                    <button
+                      className="cw-icon-btn"
+                      style={{ opacity: 1 }}
+                      onClick={() => syncPlaylist(pl.id)}
+                      title="Sync now"
+                    >
+                      <RefreshCw size={14} strokeWidth={1.75} />
+                    </button>
+                    <button
+                      className="cw-icon-btn danger"
+                      style={{ opacity: 1 }}
+                      onClick={() => removePlaylist(pl.id)}
+                      title="Remove"
+                    >
+                      <Trash2 size={14} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <div key={tag.id} className="flex items-center gap-1">
-                <TagBadge name={`${tag.name} (${tag.videoCount})`} color={tag.color} />
-                <button
-                  onClick={() => removeTag(tag.id)}
-                  className="text-muted-foreground/50 hover:text-destructive"
+        <section>
+          <h3 className="cw-section-eyebrow">Tags</h3>
+          <div className="cw-settings-row">
+            <input
+              className="cw-line-input"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="New tag name"
+              onKeyDown={(e) => e.key === 'Enter' && addTag()}
+            />
+            <input
+              className="cw-color-input"
+              type="color"
+              value={newTagColor}
+              onChange={(e) => setNewTagColor(e.target.value)}
+              title="Tag color"
+            />
+            <button className="cw-btn-ghost" onClick={addTag}>
+              <Plus size={12} /> Add tag
+            </button>
+          </div>
+
+          {tags.length > 0 ? (
+            <div className="cw-tag-list">
+              {tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="cw-tag-pill"
+                  style={{
+                    background: `${tag.color}1a`,
+                    color: tag.color,
+                  }}
                 >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+                  {tag.name}
+                  <span className="ct">{tag.videoCount}</span>
+                  <button
+                    className="x"
+                    onClick={() => removeTag(tag.id)}
+                    aria-label={`Remove ${tag.name}`}
+                  >
+                    <X size={10} strokeWidth={2} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--fg-3)', margin: 0 }}>No tags yet.</p>
+          )}
+        </section>
+      </div>
+    </>
   );
 }

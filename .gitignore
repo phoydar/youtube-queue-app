@@ -42,3 +42,7 @@ drizzle/
 # misc
 *.tsbuildinfo
 next-env.d.ts
+
+# Assets
+graphify-out/
+assets/

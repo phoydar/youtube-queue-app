@@ -15,36 +15,44 @@ export function StatsBar() {
 
   if (!stats) {
     return (
-      <div className="flex gap-6 border-b border-border pb-4">
+      <div className="cw-stats">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-5 w-20 animate-pulse rounded bg-muted" />
+          <div key={i} className="cw-stat">
+            <div className="cw-skel" style={{ height: 24, width: 60 }} />
+            <span className="lbl" style={{ visibility: 'hidden' }}>—</span>
+          </div>
         ))}
       </div>
     );
   }
 
-  const items = [
-    { label: 'videos', value: stats.totalVideos },
-    { label: 'unwatched', value: stats.unwatchedCount },
-    { label: 'this week', value: stats.watchedThisWeek },
-    {
-      label: 'oldest',
-      value: stats.oldestUnwatchedDays !== null ? `${stats.oldestUnwatchedDays}d` : '\u2014',
-    },
-  ];
-
   return (
-    <div className="flex items-baseline gap-6 border-b border-border pb-4">
-      {items.map((item, i) => (
-        <div key={item.label} className="flex items-baseline gap-1.5">
-          <span className={`text-lg font-semibold tabular-nums ${i === 0 ? 'text-foreground' : 'text-foreground/80'}`}>
-            {item.value}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {item.label}
-          </span>
-        </div>
-      ))}
+    <div className="cw-stats">
+      <div className="cw-stat">
+        <span className="num">{stats.totalVideos}</span>
+        <span className="lbl">Clips</span>
+      </div>
+      <div className="cw-stat">
+        <span className="num ember">{stats.unwatchedCount}</span>
+        <span className="lbl">Unwatched</span>
+      </div>
+      <div className="cw-stat">
+        <span className="num">{stats.watchedThisWeek}</span>
+        <span className="lbl">This week</span>
+      </div>
+      <div className="cw-stat">
+        <span className="num">
+          {stats.oldestUnwatchedDays !== null ? (
+            <>
+              {stats.oldestUnwatchedDays}
+              <small>d</small>
+            </>
+          ) : (
+            '—'
+          )}
+        </span>
+        <span className="lbl">Oldest unread</span>
+      </div>
     </div>
   );
 }

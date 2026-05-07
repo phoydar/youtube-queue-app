@@ -2,17 +2,15 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 
 interface ThemeContextValue {
   theme: Theme;
-  resolved: 'light' | 'dark';
   setTheme: (t: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: 'system',
-  resolved: 'dark',
+  theme: 'light',
   setTheme: () => {},
 });
 
@@ -20,48 +18,19 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-function getSystemTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'dark';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [resolved, setResolved] = useState<'light' | 'dark'>('dark');
+  const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
-  // Read saved preference on mount
   useEffect(() => {
-    const saved = localStorage.getItem('queue-theme') as Theme | null;
-    if (saved && ['light', 'dark', 'system'].includes(saved)) {
-      setThemeState(saved);
-    }
+    const saved = localStorage.getItem('queue-theme');
+    const initial: Theme = saved === 'dark' ? 'dark' : 'light';
+    setThemeState(initial);
     setMounted(true);
   }, []);
 
-  // Resolve actual theme and apply to <html>
   useEffect(() => {
-    const actual = theme === 'system' ? getSystemTheme() : theme;
-    setResolved(actual);
-
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(actual);
-  }, [theme]);
-
-  // Listen for system theme changes when in system mode
-  useEffect(() => {
-    if (theme !== 'system') return;
-
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = (e: MediaQueryListEvent) => {
-      setResolved(e.matches ? 'dark' : 'light');
-      document.documentElement.classList.remove('light', 'dark');
-      document.documentElement.classList.add(e.matches ? 'dark' : 'light');
-    };
-
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
   function setTheme(t: Theme) {
@@ -69,13 +38,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('queue-theme', t);
   }
 
-  // Prevent flash — render children only after mount
   if (!mounted) {
-    return <div className="min-h-screen bg-background" />;
+    return <div style={{ minHeight: '100vh', background: 'var(--bg-paper)' }} />;
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, resolved, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

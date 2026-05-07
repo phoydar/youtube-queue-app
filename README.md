@@ -117,7 +117,9 @@ src/
 
 ## Docs
 
+- [Current State](docs/current-state.md)
 - [Product Vision](docs/00-product-vision.md)
 - [Feature Requirements](docs/01-feature-requirements.md)
 - [Technical Architecture](docs/02-technical-architecture.md)
 - [Codebase Plan](docs/03-codebase-plan.md)
+- [AI Knowledge System Roadmap](docs/04-ai-knowledge-system-roadmap.md)

@@ -44,10 +44,7 @@ export function Dashboard() {
   const fetchVideos = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        sort: 'score',
-        limit: '50',
-      });
+      const params = new URLSearchParams({ sort: 'score', limit: '50' });
 
       if (viewFilter === 'queue') {
         params.set('watched', 'false');
@@ -58,15 +55,9 @@ export function Dashboard() {
         params.set('watched', 'true');
       }
 
-      if (selectedTags.length > 0) {
-        params.set('tags', selectedTags.join(','));
-      }
-      if (selectedPlaylist) {
-        params.set('playlist', selectedPlaylist);
-      }
-      if (searchQuery.trim()) {
-        params.set('search', searchQuery.trim());
-      }
+      if (selectedTags.length > 0) params.set('tags', selectedTags.join(','));
+      if (selectedPlaylist) params.set('playlist', selectedPlaylist);
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
 
       const res = await fetch(`/api/videos?${params}`);
       const data = await res.json();
@@ -136,62 +127,69 @@ export function Dashboard() {
     handleRefresh();
   }
 
-  const viewTabs: { key: ViewFilter; label: string; count?: number }[] = [
+  const counts = {
+    queue: videos.filter((v) => (v.watchStatus || (v.watched ? 'WATCHED' : 'UNWATCHED')) === 'UNWATCHED').length,
+    in_progress: videos.filter((v) => v.watchStatus === 'IN_PROGRESS').length,
+    watched: videos.filter((v) => v.watched).length,
+  };
+
+  const tabs: { key: ViewFilter; label: string }[] = [
     { key: 'queue', label: 'Queue' },
-    { key: 'in_progress', label: 'In Progress' },
+    { key: 'in_progress', label: 'In progress' },
     { key: 'watched', label: 'Watched' },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Stats strip */}
+    <>
+      <div className="cw-page-head">
+        <div>
+          <h1>Library</h1>
+          <p className="sub">A reading list, not a queue. Skim, summarize, weave together.</p>
+        </div>
+      </div>
+
       <StatsBar />
 
-      {/* Toolbar: sync + search + view tabs */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="cw-toolbar">
+        <div className="row">
           <SyncStatus lastSyncAt={lastSyncAt} onSyncComplete={handleRefresh} />
-          <div className="flex items-center gap-1">
-            {viewTabs.map((tab) => (
+          <div className="cw-tabs">
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => { setViewFilter(tab.key); setSelectedIds([]); }}
-                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
-                  viewFilter === tab.key
-                    ? 'text-foreground border-b-2 border-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`cw-tab ${viewFilter === tab.key ? 'active' : ''}`}
+                onClick={() => {
+                  setViewFilter(tab.key);
+                  setSelectedIds([]);
+                }}
               >
                 {tab.label}
+                {viewFilter === tab.key ? null : null}
               </button>
             ))}
-            <span className="mx-1.5 h-3 w-px bg-border" />
             <button
+              className={`cw-tab ${bulkMode ? 'active' : ''}`}
               onClick={() => {
                 setBulkMode(!bulkMode);
                 setSelectedIds([]);
               }}
-              className={`px-2 py-1 text-xs font-medium transition-colors ${
-                bulkMode
-                  ? 'text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              title="Bulk select"
             >
               Select
             </button>
           </div>
         </div>
-
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-2">
+      <div className="cw-filters" style={{ marginBottom: 18 }}>
         <PlaylistFilter selectedPlaylist={selectedPlaylist} onPlaylistChange={setSelectedPlaylist} />
+      </div>
+
+      <div className="cw-filters" style={{ marginBottom: 24 }}>
         <TagFilter selectedTags={selectedTags} onTagsChange={setSelectedTags} />
       </div>
 
-      {/* Bulk action bar */}
       {bulkMode && (
         <BulkActions
           selectedIds={selectedIds}
@@ -206,33 +204,41 @@ export function Dashboard() {
         />
       )}
 
-      {/* Video List */}
       {loading ? (
-        <div className="space-y-0">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex gap-4 border-b border-border/40 py-3">
-              <div className="h-[72px] w-[128px] animate-pulse rounded bg-muted" />
-              <div className="flex flex-1 flex-col justify-center gap-2">
-                <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
-                <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+        <div className="cw-videos">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="cw-video">
+              <span />
+              <div className="cw-skel" style={{ width: 160, height: 90 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                <div className="cw-skel" style={{ height: 14, width: '70%' }} />
+                <div className="cw-skel" style={{ height: 12, width: '35%' }} />
               </div>
+              <span />
             </div>
           ))}
         </div>
       ) : videos.length === 0 ? (
-        <div className="py-16 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="cw-empty">
+          <p className="t">
             {searchQuery
-              ? 'No videos match your search.'
+              ? 'No matching clips'
               : viewFilter === 'watched'
-              ? 'No watched videos yet.'
+              ? 'Nothing watched yet'
               : viewFilter === 'in_progress'
-              ? 'No videos in progress.'
-              : 'Queue is empty. Add a playlist in Settings to get started.'}
+              ? 'Nothing in progress'
+              : 'Nothing here yet'}
+          </p>
+          <p className="s">
+            {searchQuery
+              ? 'Try a different search.'
+              : viewFilter === 'queue'
+              ? 'Add a YouTube playlist or paste a link to begin gathering clips.'
+              : 'Mark a few clips to populate this view.'}
           </p>
         </div>
       ) : (
-        <div>
+        <div className="cw-videos">
           {videos.map((video) => (
             <VideoCard
               key={video.id}
@@ -245,6 +251,6 @@ export function Dashboard() {
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }

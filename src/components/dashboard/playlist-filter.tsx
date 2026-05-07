@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
 
 interface Playlist {
   id: string;
@@ -27,15 +26,11 @@ export function PlaylistFilter({ selectedPlaylist, onPlaylistChange }: PlaylistF
   if (playlists.length <= 1) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <>
+      <span className="cw-filter-eyebrow">Sources</span>
       <button
+        className={`cw-chip ${!selectedPlaylist ? 'active' : ''}`}
         onClick={() => onPlaylistChange(null)}
-        className={cn(
-          'rounded-sm px-2 py-0.5 text-[11px] font-medium transition-colors',
-          !selectedPlaylist
-            ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:text-foreground'
-        )}
       >
         All
       </button>
@@ -44,19 +39,14 @@ export function PlaylistFilter({ selectedPlaylist, onPlaylistChange }: PlaylistF
         return (
           <button
             key={pl.id}
+            className={`cw-chip ${active ? 'active' : ''}`}
             onClick={() => onPlaylistChange(active ? null : pl.id)}
-            className={cn(
-              'rounded-sm px-2 py-0.5 text-[11px] font-medium transition-colors',
-              active
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
           >
             {pl.title}
-            <span className="ml-1 opacity-40">{pl.videoCount}</span>
+            <span className="ct">{pl.videoCount}</span>
           </button>
         );
       })}
-    </div>
+    </>
   );
 }

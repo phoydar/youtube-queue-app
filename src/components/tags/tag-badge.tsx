@@ -1,21 +1,20 @@
 interface TagBadgeProps {
   name: string;
-  color: string;
+  color?: string;
   onClick?: () => void;
   removable?: boolean;
   onRemove?: () => void;
 }
 
 export function TagBadge({ name, color, onClick, removable, onRemove }: TagBadgeProps) {
+  const customStyle = color
+    ? { backgroundColor: `${color}1a`, color }
+    : undefined;
   return (
     <span
       onClick={onClick}
-      className="inline-flex items-center gap-0.5 rounded-sm px-1.5 py-px text-[10px] font-medium"
-      style={{
-        backgroundColor: `${color}15`,
-        color: color,
-        cursor: onClick ? 'pointer' : 'default',
-      }}
+      className="cw-tag"
+      style={{ ...customStyle, cursor: onClick ? 'pointer' : 'default' }}
     >
       {name}
       {removable && (
@@ -24,7 +23,15 @@ export function TagBadge({ name, color, onClick, removable, onRemove }: TagBadge
             e.stopPropagation();
             onRemove?.();
           }}
-          className="ml-0.5 hover:opacity-70"
+          style={{
+            background: 'none',
+            border: 0,
+            padding: 0,
+            marginLeft: 4,
+            color: 'inherit',
+            opacity: 0.55,
+            cursor: 'pointer',
+          }}
         >
           &times;
         </button>

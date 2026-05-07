@@ -3,19 +3,15 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import {
-  ArrowUpCircle,
-  ArrowRightCircle,
-  ArrowDownCircle,
-  Check,
-  Undo2,
+  ArrowUp,
+  ArrowRight,
+  ArrowDown,
   ExternalLink,
-  Play,
   StickyNote,
-  X,
   Sparkles,
   RefreshCw,
 } from 'lucide-react';
-import { cn, formatDuration, timeAgo } from '@/lib/utils';
+import { formatDuration, timeAgo } from '@/lib/utils';
 import type { Priority, WatchStatus } from '@/types';
 import { TagBadge } from '@/components/tags/tag-badge';
 
@@ -49,12 +45,17 @@ interface VideoCardProps {
 
 const PRIORITY_CONFIG: Record<
   Priority,
-  { icon: typeof ArrowUpCircle; label: string; color: string; next: Priority }
+  { icon: typeof ArrowUp; label: string; cls: string; next: Priority }
 > = {
-  HIGH: { icon: ArrowUpCircle, label: 'High', color: 'text-red-400', next: 'MEDIUM' },
-  MEDIUM: { icon: ArrowRightCircle, label: 'Med', color: 'text-amber-400', next: 'LOW' },
-  LOW: { icon: ArrowDownCircle, label: 'Low', color: 'text-sky-400', next: 'HIGH' },
+  HIGH: { icon: ArrowUp, label: 'High', cls: 'high', next: 'MEDIUM' },
+  MEDIUM: { icon: ArrowRight, label: 'Medium', cls: 'med', next: 'LOW' },
+  LOW: { icon: ArrowDown, label: 'Low', cls: 'low', next: 'HIGH' },
 };
+
+function thumbGlyphFor(title: string) {
+  const words = title.split(/\s+/).filter((w) => w.length > 2);
+  return (words[0] || title || '?')[0]?.toUpperCase() ?? '?';
+}
 
 export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: VideoCardProps) {
   const [loading, setLoading] = useState(false);
@@ -63,9 +64,14 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
   const [savingNotes, setSavingNotes] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
+
   const hasSummary = Boolean(video.summary);
   const priorityCfg = PRIORITY_CONFIG[video.priority];
+  const PriorityIcon = priorityCfg.icon;
   const watchStatus = video.watchStatus || (video.watched ? 'WATCHED' : 'UNWATCHED');
+  const wsClass =
+    watchStatus === 'IN_PROGRESS' ? 'in_progress'
+    : watchStatus === 'WATCHED' ? 'watched' : 'unwatched';
 
   async function updateVideo(data: Record<string, unknown>) {
     setLoading(true);
@@ -121,234 +127,209 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
     ? `https://www.youtube.com/watch?v=${video.youtubeVideoId}&t=${video.resumeTimestamp}`
     : `https://www.youtube.com/watch?v=${video.youtubeVideoId}`;
 
+  const resumePct =
+    video.resumeTimestamp && video.durationSeconds
+      ? Math.min(100, Math.round((video.resumeTimestamp / video.durationSeconds) * 100))
+      : 0;
+
+  const cardClass = [
+    'cw-video',
+    watchStatus === 'WATCHED' ? 'is-watched' : '',
+    selected ? 'is-selected' : '',
+    loading ? 'is-loading' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div
-      className={cn(
-        'group relative',
-        watchStatus === 'WATCHED' && 'opacity-50',
-        selected && 'ring-1 ring-primary/50',
-        loading && 'pointer-events-none opacity-40'
-      )}
-    >
-      <div className="flex gap-4 py-3">
-        {/* Checkbox for bulk select */}
-        {selectable && (
-          <div className="flex flex-shrink-0 items-center pl-1">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={() => onSelect?.(video.id)}
-              className="h-3.5 w-3.5 rounded border-muted-foreground/30 accent-primary"
-            />
-          </div>
+    <>
+      <div className={cardClass}>
+        {/* Status mark or bulk checkbox */}
+        {selectable ? (
+          <input
+            type="checkbox"
+            className="cw-check"
+            checked={selected ?? false}
+            onChange={() => onSelect?.(video.id)}
+            aria-label={`Select ${video.title}`}
+          />
+        ) : (
+          <button
+            className={`cw-ws-mark ${wsClass}`}
+            onClick={cycleWatchStatus}
+            title={watchStatus.toLowerCase().replace('_', ' ')}
+            aria-label={`Status: ${watchStatus}`}
+          />
         )}
 
         {/* Thumbnail */}
-        <a
-          href={youtubeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative flex-shrink-0"
-        >
-          <div className="relative h-[72px] w-[128px] overflow-hidden rounded bg-muted">
-            {video.thumbnailUrl ? (
-              <Image
-                src={video.thumbnailUrl}
-                alt={video.title}
-                fill
-                className="object-cover transition-transform duration-200 group-hover:scale-105"
-                sizes="128px"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                No thumbnail
-              </div>
-            )}
-            <span className="absolute bottom-1 right-1 rounded-sm bg-black/75 px-1 py-px text-[10px] font-medium tabular-nums text-white">
-              {formatDuration(video.durationSeconds)}
-            </span>
-            {watchStatus === 'IN_PROGRESS' && video.resumeTimestamp && (
-              <span className="absolute bottom-1 left-1 rounded-sm bg-amber-500/90 px-1 py-px text-[10px] font-medium text-black">
-                {formatDuration(video.resumeTimestamp)}
-              </span>
-            )}
-          </div>
+        <a className="cw-thumb" href={youtubeUrl} target="_blank" rel="noopener noreferrer">
+          {video.thumbnailUrl ? (
+            <Image
+              src={video.thumbnailUrl}
+              alt={video.title}
+              fill
+              sizes="160px"
+              style={{ objectFit: 'cover' }}
+            />
+          ) : (
+            <div className="cw-thumb-fallback">{thumbGlyphFor(video.title)}</div>
+          )}
+          {resumePct > 0 && watchStatus !== 'WATCHED' ? (
+            <span className="resume" style={{ width: `${resumePct}%` }} />
+          ) : null}
+          <span className="dur">{formatDuration(video.durationSeconds)}</span>
         </a>
 
-        {/* Info */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          <a
-            href={youtubeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="line-clamp-1 text-[13px] font-medium leading-snug text-foreground transition-colors hover:text-primary"
-          >
+        {/* Body */}
+        <div className="cw-body">
+          <a className="cw-v-title" href={youtubeUrl} target="_blank" rel="noopener noreferrer">
             {video.title}
           </a>
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="truncate">{video.channelName}</span>
-            <span className="text-border">&middot;</span>
-            <span className="whitespace-nowrap">{timeAgo(video.addedAt)}</span>
-            {watchStatus === 'IN_PROGRESS' && (
+          <div className="cw-v-meta">
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{video.channelName}</span>
+            <span className="dot">·</span>
+            <span>{timeAgo(video.addedAt)}</span>
+            {watchStatus === 'IN_PROGRESS' ? (
               <>
-                <span className="text-border">&middot;</span>
-                <span className="text-amber-400">watching</span>
+                <span className="dot">·</span>
+                <span className="amber">watching</span>
               </>
-            )}
+            ) : null}
+            {hasSummary ? (
+              <>
+                <span className="dot">·</span>
+                <span className="moss">summarized</span>
+              </>
+            ) : null}
+            {!hasSummary && video.aiError ? (
+              <>
+                <span className="dot">·</span>
+                <span className="danger">AI error</span>
+              </>
+            ) : null}
           </div>
 
-          {/* Tags row */}
-          {((video.tags && video.tags.length > 0) || video.notes) && (
-            <div className="mt-0.5 flex flex-wrap items-center gap-1">
-              {video.tags && video.tags.map((tag) => (
+          {video.tags && video.tags.length > 0 ? (
+            <div className="cw-v-tags">
+              {video.tags.map((tag) => (
                 <TagBadge key={tag.id} name={tag.name} color={tag.color} />
               ))}
-              {video.notes && !showNotes && (
-                <button
-                  onClick={() => setShowNotes(true)}
-                  className="inline-flex items-center text-[10px] text-muted-foreground/60 hover:text-muted-foreground"
-                  title="Has notes"
-                >
-                  <StickyNote className="h-3 w-3" />
-                </button>
-              )}
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Actions — right side */}
-        <div className="flex flex-shrink-0 items-center gap-0.5 opacity-40 transition-opacity group-hover:opacity-100">
+        {/* Actions */}
+        <div className="cw-actions">
           <button
+            className={`cw-icon-btn ${priorityCfg.cls}`}
             onClick={cyclePriority}
             title={`Priority: ${priorityCfg.label}`}
-            className="rounded-md p-1.5 transition-colors hover:bg-secondary"
+            aria-label={`Priority ${priorityCfg.label}`}
           >
-            <priorityCfg.icon className={cn('h-4 w-4', priorityCfg.color)} />
+            <PriorityIcon size={14} strokeWidth={1.75} />
           </button>
-          <button
-            onClick={cycleWatchStatus}
-            title={`Status: ${watchStatus.toLowerCase().replace('_', ' ')}`}
-            className="rounded-md p-1.5 transition-colors hover:bg-secondary"
-          >
-            {watchStatus === 'WATCHED' ? (
-              <Undo2 className="h-4 w-4 text-muted-foreground" />
-            ) : watchStatus === 'IN_PROGRESS' ? (
-              <Play className="h-4 w-4 text-amber-400 fill-amber-400" />
-            ) : (
-              <Check className="h-4 w-4 text-emerald-400" />
-            )}
-          </button>
-          {hasSummary && (
+          {hasSummary ? (
             <button
-              onClick={() => setShowSummary(!showSummary)}
+              className={`cw-icon-btn summary ${showSummary ? 'active' : ''}`}
+              onClick={() => setShowSummary((s) => !s)}
               title="AI summary"
-              className={cn(
-                'rounded-md p-1.5 transition-colors hover:bg-secondary',
-                showSummary && 'bg-secondary'
-              )}
+              aria-pressed={showSummary}
             >
-              <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+              <Sparkles size={14} strokeWidth={1.75} />
             </button>
-          )}
-          {!hasSummary && video.aiError && (
+          ) : null}
+          {!hasSummary && video.aiError ? (
             <button
+              className="cw-icon-btn danger"
               onClick={reprocessAi}
               disabled={reprocessing}
               title={`AI error: ${video.aiError}`}
-              className="rounded-md p-1.5 transition-colors hover:bg-secondary"
             >
-              <RefreshCw
-                className={cn(
-                  'h-3.5 w-3.5 text-red-400',
-                  reprocessing && 'animate-spin'
-                )}
-              />
+              <RefreshCw size={14} strokeWidth={1.75} className={reprocessing ? 'cw-spin' : ''} />
             </button>
-          )}
+          ) : null}
           <button
-            onClick={() => setShowNotes(!showNotes)}
+            className={`cw-icon-btn ${video.notes ? 'notes-active' : ''} ${showNotes ? 'active' : ''}`}
+            onClick={() => setShowNotes((s) => !s)}
             title="Notes"
-            className={cn(
-              'rounded-md p-1.5 transition-colors hover:bg-secondary',
-              showNotes && 'bg-secondary'
-            )}
+            aria-pressed={showNotes}
           >
-            <StickyNote className={cn('h-3.5 w-3.5', video.notes ? 'text-primary' : 'text-muted-foreground')} />
+            <StickyNote size={14} strokeWidth={1.75} />
           </button>
-          {video.score !== undefined && (
-            <span className="ml-1 min-w-[2ch] text-right text-[10px] tabular-nums text-muted-foreground/50">
-              {Math.round(video.score)}
-            </span>
-          )}
+          <a
+            className="cw-icon-btn"
+            href={youtubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open in YouTube"
+          >
+            <ExternalLink size={14} strokeWidth={1.75} />
+          </a>
+          {typeof video.score === 'number' ? (
+            <span className="cw-score">{Math.round(video.score)}</span>
+          ) : null}
         </div>
       </div>
 
-      {/* Notes panel */}
-      {showNotes && (
-        <div className="ml-[144px] border-t border-border/50 pb-3 pt-2">
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Why you saved this, key takeaways, timestamps..."
-            className="w-full resize-none rounded bg-secondary/50 p-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
-            rows={3}
-          />
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground/50">
-              {notes.length > 0 ? `${notes.length} chars` : ''}
+      {showSummary && hasSummary ? (
+        <div className="cw-summary-panel">
+          <div className="cw-summary-head">
+            <span className="cw-summary-eyebrow">Summary</span>
+            <span className="cw-summary-age">
+              {video.aiProcessedAt ? `generated ${timeAgo(video.aiProcessedAt)}` : 'generated'}
             </span>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => setShowNotes(false)}
-                className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                Close
-              </button>
-              <button
-                onClick={saveNotes}
-                disabled={savingNotes}
-                className="rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-              >
-                {savingNotes ? 'Saving...' : 'Save'}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-
-      {/* AI summary panel */}
-      {showSummary && hasSummary && (
-        <div className="ml-[144px] border-t border-border/50 pb-3 pt-2">
-          {video.keyTopics && video.keyTopics.length > 0 && (
-            <div className="mb-1.5 flex flex-wrap gap-1">
-              {video.keyTopics.map((topic) => (
-                <span
-                  key={topic}
-                  className="rounded bg-violet-500/10 px-1.5 py-0.5 text-[10px] text-violet-300"
-                >
-                  {topic}
-                </span>
-              ))}
+          <p className="cw-summary-text">{video.summary}</p>
+          {video.keyTopics && video.keyTopics.length > 0 ? (
+            <div className="cw-summary-topics">
+              {video.keyTopics.map((t, i) => {
+                const c = `topic-${(i % 5) + 1}`;
+                return (
+                  <span
+                    key={t}
+                    className="cw-topic"
+                    style={{
+                      background: `var(--${c}-soft)`,
+                      color: `var(--${c})`,
+                    }}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
             </div>
-          )}
-          <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">
-            {video.summary}
-          </p>
-          <div className="mt-2 flex items-center justify-end gap-2">
-            <button
-              onClick={reprocessAi}
-              disabled={reprocessing}
-              className="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
-            >
-              <RefreshCw className={cn('h-3 w-3', reprocessing && 'animate-spin')} />
-              {reprocessing ? 'Re-processing...' : 'Re-process'}
+          ) : null}
+          <div className="cw-summary-foot">
+            <button className="cw-btn-ghost" onClick={reprocessAi} disabled={reprocessing}>
+              <RefreshCw size={11} className={reprocessing ? 'cw-spin' : ''} />
+              {reprocessing ? 'Re-processing…' : 'Re-summarize'}
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Divider between cards */}
-      <div className="border-b border-border/40" />
-    </div>
+      {showNotes ? (
+        <div className="cw-notes-panel">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Why you saved this, key takeaways, timestamps…"
+            rows={3}
+          />
+          <div className="cw-notes-foot">
+            <span className="count">{notes.length > 0 ? `${notes.length} chars` : ''}</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="cw-btn-ghost" onClick={() => setShowNotes(false)}>
+                Close
+              </button>
+              <button className="cw-btn-primary" onClick={saveNotes} disabled={savingNotes}>
+                {savingNotes ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

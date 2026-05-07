@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { RefreshCw, Copy, ExternalLink, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { RefreshCw, Copy, ExternalLink, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 interface SampleVideo {
   id: string;
@@ -117,183 +116,173 @@ export default function ClustersPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
+    <>
+      <div className="cw-page-head">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Clusters</h1>
-          <p className="text-xs text-muted-foreground">
-            Videos grouped by semantic similarity. Paste a cluster&apos;s URLs into NotebookLM
-            to build a knowledge base.
+          <h1>Threads</h1>
+          <p className="sub">
+            Loose groupings forming across your library — by theme, not algorithm. Paste a
+            thread&apos;s URLs into NotebookLM to build a knowledge base.
           </p>
         </div>
-        <button
-          onClick={recompute}
-          disabled={recomputing}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', recomputing && 'animate-spin')} />
-          {recomputing ? 'Recomputing...' : 'Recompute clusters'}
+        <button className="cw-btn-primary" onClick={recompute} disabled={recomputing}>
+          <RefreshCw size={13} className={recomputing ? 'cw-spin' : ''} />
+          {recomputing ? 'Recomputing…' : 'Recompute'}
         </button>
       </div>
 
-      {error && (
-        <div className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-          {error}
-        </div>
-      )}
+      {error && <div className="cw-banner error" style={{ marginBottom: 16 }}>{error}</div>}
 
       {loading ? (
-        <div className="text-xs text-muted-foreground">Loading...</div>
+        <div className="cw-empty">
+          <p className="s">Loading…</p>
+        </div>
       ) : clusters.length === 0 ? (
-        <div className="rounded border border-border/60 bg-secondary/30 p-4 text-xs text-muted-foreground">
-          No clusters yet. Process some videos through the AI pipeline, then click &quot;Recompute
-          clusters&quot;.
+        <div className="cw-empty">
+          <p className="t">No threads yet</p>
+          <p className="s">
+            Process some videos through the AI pipeline, then click <em>Recompute</em>.
+          </p>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <div className="cw-threads">
           {clusters.map((cluster) => {
             const isOpen = openId === cluster.id;
             const detail = details[cluster.id];
             return (
-              <li
-                key={cluster.id}
-                className="rounded-md border border-border/60 bg-secondary/20"
-              >
-                <button
-                  onClick={() => toggleOpen(cluster.id)}
-                  className="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-secondary/40"
-                >
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {cluster.label}
-                      </span>
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                        {cluster.videoCount}
-                      </span>
-                    </div>
+              <div key={cluster.id} className="cw-thread-card">
+                <button className="cw-thread-head" onClick={() => toggleOpen(cluster.id)}>
+                  <span className="cw-thread-count">{cluster.videoCount}</span>
+                  <div className="cw-thread-body">
+                    <div className="cw-thread-name">{cluster.label}</div>
                     {cluster.description && (
-                      <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                        {cluster.description}
-                      </p>
+                      <p className="cw-thread-blurb">{cluster.description}</p>
                     )}
-                    <div className="mt-1 flex gap-1">
-                      {cluster.sampleVideos.map((sv) => (
-                        <div
-                          key={sv.id}
-                          className="relative h-8 w-14 overflow-hidden rounded-sm bg-muted"
-                          title={sv.title}
-                        >
-                          {sv.thumbnailUrl && (
-                            <Image
-                              src={sv.thumbnailUrl}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="56px"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    {cluster.sampleVideos.length > 0 && (
+                      <div className="cw-thread-thumbs">
+                        {cluster.sampleVideos.map((sv) => (
+                          <div key={sv.id} className="cw-thread-thumb" title={sv.title}>
+                            {sv.thumbnailUrl && (
+                              <Image
+                                src={sv.thumbnailUrl}
+                                alt=""
+                                width={56}
+                                height={32}
+                                style={{ objectFit: 'cover' }}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {isOpen ? (
-                    <ChevronUp className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    <ChevronUp size={16} style={{ color: 'var(--fg-3)', flexShrink: 0 }} />
                   ) : (
-                    <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    <ChevronDown size={16} style={{ color: 'var(--fg-3)', flexShrink: 0 }} />
                   )}
                 </button>
 
                 {isOpen && (
-                  <div className="border-t border-border/60 p-3">
-                    <div className="mb-3 flex items-center gap-2">
+                  <div className="cw-thread-detail">
+                    <div className="cw-thread-actions">
                       <button
+                        className="cw-btn-primary"
                         onClick={() => copyUrlsForNotebookLM(cluster.id)}
                         disabled={!detail}
-                        className="inline-flex items-center gap-1.5 rounded bg-primary/90 px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:opacity-50"
                       >
                         {copiedId === cluster.id ? (
                           <>
-                            <Check className="h-3 w-3" /> Copied
+                            <Check size={11} /> Copied
                           </>
                         ) : (
                           <>
-                            <Copy className="h-3 w-3" /> Copy URLs for NotebookLM
+                            <Copy size={11} /> Copy URLs for NotebookLM
                           </>
                         )}
                       </button>
                       <a
+                        className="cw-btn-ghost"
                         href="https://notebooklm.google.com/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground"
                       >
-                        Open NotebookLM <ExternalLink className="h-3 w-3" />
+                        <ExternalLink size={11} /> Open NotebookLM
                       </a>
+                      <button className="cw-btn-ghost" disabled title="Coming soon">
+                        <Sparkles size={11} /> Synthesize thread
+                      </button>
                     </div>
 
                     {!detail ? (
-                      <div className="text-[11px] text-muted-foreground">Loading members...</div>
+                      <p style={{ fontSize: 13, color: 'var(--fg-3)', margin: 0 }}>Loading members…</p>
                     ) : (
-                      <ul className="space-y-2">
+                      <ul className="cw-thread-clips">
                         {detail.members.map((m) => (
-                          <li key={m.id} className="flex gap-3">
+                          <li key={m.id} className="cw-thread-clip">
                             <a
+                              className="mini-thumb"
                               href={`https://www.youtube.com/watch?v=${m.youtubeVideoId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="relative h-10 w-[72px] flex-shrink-0 overflow-hidden rounded-sm bg-muted"
+                              style={{ display: 'block', textDecoration: 'none' }}
                             >
                               {m.thumbnailUrl && (
                                 <Image
                                   src={m.thumbnailUrl}
                                   alt={m.title}
-                                  fill
-                                  className="object-cover"
-                                  sizes="72px"
+                                  width={96}
+                                  height={54}
+                                  style={{ objectFit: 'cover' }}
                                 />
                               )}
                             </a>
-                            <div className="min-w-0 flex-1">
+                            <div style={{ minWidth: 0 }}>
                               <a
+                                className="clip-title"
                                 href={`https://www.youtube.com/watch?v=${m.youtubeVideoId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="line-clamp-1 text-xs text-foreground hover:text-primary"
                               >
                                 {m.title}
                               </a>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                <span className="truncate">{m.channelName}</span>
-                                <span>&middot;</span>
-                                <span className="tabular-nums">
-                                  sim {(m.similarity * 100).toFixed(0)}%
+                              <div className="clip-meta">
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {m.channelName}
                                 </span>
                               </div>
                               {m.keyTopics && m.keyTopics.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                  {m.keyTopics.slice(0, 5).map((t) => (
-                                    <span
-                                      key={t}
-                                      className="rounded bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground"
-                                    >
-                                      {t}
-                                    </span>
-                                  ))}
+                                <div className="clip-topics">
+                                  {m.keyTopics.slice(0, 5).map((t, i) => {
+                                    const c = `topic-${(i % 5) + 1}`;
+                                    return (
+                                      <span
+                                        key={t}
+                                        className="cw-tag"
+                                        style={{
+                                          background: `var(--${c}-soft)`,
+                                          color: `var(--${c})`,
+                                        }}
+                                      >
+                                        {t}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
+                            <span className="sim">sim {m.similarity.toFixed(2)}</span>
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
-    </div>
+    </>
   );
 }

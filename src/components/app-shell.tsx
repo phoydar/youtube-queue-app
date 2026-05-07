@@ -1,41 +1,47 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { ThemeProvider } from './theme-provider';
 import { ThemeToggle } from './theme-toggle';
 
+const CW_MARK = (
+  <svg className="cw-mark" viewBox="0 0 32 32" fill="none" width="22" height="22">
+    <path d="M8 9 C 8 4, 16 4, 16 11 C 16 18, 24 18, 24 23" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round"/>
+    <path d="M8 23 C 8 18, 16 18, 16 11" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" opacity="0.55"/>
+    <circle cx="8" cy="9" r="1.6" fill="currentColor"/>
+    <circle cx="24" cy="23" r="1.6" fill="currentColor"/>
+  </svg>
+);
+
+const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
+  { href: '/', label: 'Library', match: (p) => p === '/' },
+  { href: '/clusters', label: 'Threads', match: (p) => p.startsWith('/clusters') },
+  { href: '/settings', label: 'Settings', match: (p) => p.startsWith('/settings') },
+];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? '/';
+
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-            <a href="/" className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-primary text-primary-foreground text-xs font-bold">
-                Q
-              </div>
-              <span className="text-sm font-semibold tracking-tight text-foreground">
-                Queue
-              </span>
-            </a>
-            <nav className="flex items-center gap-2">
-              <ThemeToggle />
-              <a
-                href="/clusters"
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary"
-              >
-                Clusters
+      <header className="cw-header">
+        <div className="cw-header-inner">
+          <a href="/" className="cw-lockup">
+            {CW_MARK}
+            <span className="cw-word">Queue</span>
+            <span className="cw-word-sub">a personal video library</span>
+          </a>
+          <nav className="cw-nav">
+            <ThemeToggle />
+            {NAV.map((item) => (
+              <a key={item.href} href={item.href} className={item.match(pathname) ? 'active' : ''}>
+                {item.label}
               </a>
-              <a
-                href="/settings"
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary"
-              >
-                Settings
-              </a>
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto max-w-6xl px-5 py-5">{children}</main>
-      </div>
+            ))}
+          </nav>
+        </div>
+      </header>
+      <main className="cw-main">{children}</main>
     </ThemeProvider>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
 
 interface Tag {
   id: string;
@@ -36,38 +35,30 @@ export function TagFilter({ selectedTags, onTagsChange }: TagFilterProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <>
+      <span className="cw-filter-eyebrow">Topics</span>
       {tags.map((tag) => {
         const active = selectedTags.includes(tag.id);
         return (
           <button
             key={tag.id}
             onClick={() => toggleTag(tag.id)}
-            className={cn(
-              'rounded-sm px-2 py-0.5 text-[11px] font-medium transition-all border',
-              active
-                ? 'opacity-100'
-                : 'opacity-50 hover:opacity-80'
-            )}
-            style={{
-              backgroundColor: `${tag.color}${active ? '20' : '10'}`,
-              color: tag.color,
-              borderColor: `${tag.color}${active ? '40' : '15'}`,
-            }}
+            className={`cw-chip ${active ? 'active' : ''}`}
           >
             {tag.name}
-            <span className="ml-1 opacity-40">{tag.videoCount}</span>
+            <span className="ct">{tag.videoCount}</span>
           </button>
         );
       })}
       {selectedTags.length > 0 && (
         <button
           onClick={() => onTagsChange([])}
-          className="px-1 text-[11px] text-muted-foreground hover:text-foreground"
+          className="cw-chip"
+          style={{ border: 0, color: 'var(--fg-3)' }}
         >
           Clear
         </button>
       )}
-    </div>
+    </>
   );
 }
