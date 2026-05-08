@@ -1,19 +1,8 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
 import { AppShell } from '@/components/app-shell';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans-loaded',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono-loaded',
-  display: 'swap',
-});
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Queue · A personal video library',
@@ -33,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -53,10 +42,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className="antialiased"
-        style={{ fontFamily: "var(--font-sans-loaded), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" }}
-      >
+      <body className="antialiased">
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ThemeProvider } from './theme-provider';
 import { ThemeToggle } from './theme-toggle';
 
@@ -20,7 +20,13 @@ const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname() ?? '/';
+  const [pathname, setPathname] = useState<string>('/');
+  useEffect(() => {
+    const update = () => setPathname(window.location.pathname);
+    update();
+    window.addEventListener('popstate', update);
+    return () => window.removeEventListener('popstate', update);
+  }, []);
 
   return (
     <ThemeProvider>

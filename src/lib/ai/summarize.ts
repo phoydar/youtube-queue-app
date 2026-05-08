@@ -1,3 +1,4 @@
+import type Anthropic from '@anthropic-ai/sdk';
 import { getAnthropic, SUMMARY_MODEL } from './anthropic-client';
 
 export interface VideoSummary {
@@ -5,7 +6,7 @@ export interface VideoSummary {
   keyTopics: string[];
 }
 
-const SUMMARIZE_TOOL = {
+const SUMMARIZE_TOOL: Anthropic.Tool = {
   name: 'record_video_summary',
   description:
     'Record a structured summary of a YouTube video based on its transcript or description.',
@@ -28,7 +29,7 @@ const SUMMARIZE_TOOL = {
     },
     required: ['summary', 'key_topics'],
   },
-} as const;
+};
 
 export async function summarizeVideo(input: {
   title: string;
@@ -76,7 +77,7 @@ Call the record_video_summary tool with a high-quality summary and canonical top
   };
 }
 
-const CLUSTER_LABEL_TOOL = {
+const CLUSTER_LABEL_TOOL: Anthropic.Tool = {
   name: 'record_cluster_label',
   description: 'Record a human-readable label and description for a cluster of related videos.',
   input_schema: {
@@ -95,7 +96,7 @@ const CLUSTER_LABEL_TOOL = {
     },
     required: ['label', 'description'],
   },
-} as const;
+};
 
 export async function generateClusterLabel(input: {
   titles: string[];
@@ -104,7 +105,7 @@ export async function generateClusterLabel(input: {
   const anthropic = getAnthropic();
 
   const titlesList = input.titles.map((t, i) => `${i + 1}. ${t}`).join('\n');
-  const topicsList = [...new Set(input.topics)].slice(0, 30).join(', ');
+  const topicsList = Array.from(new Set(input.topics)).slice(0, 30).join(', ');
 
   const response = await anthropic.messages.create({
     model: SUMMARY_MODEL,

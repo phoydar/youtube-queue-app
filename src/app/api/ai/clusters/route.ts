@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { db } from '@/lib/db';
 import { videoClusters, videoClusterMembers, videos } from '@/lib/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';

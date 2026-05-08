@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     .from(videos)
     .where(where)
     .orderBy(desc(videos.addedAt))
-    .limit(limit);
+    .limit(limit ?? 25);
 
   const results = await processVideosBatch(
     candidates.map((c) => c.id),
