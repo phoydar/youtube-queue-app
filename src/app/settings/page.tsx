@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, RefreshCw, X } from 'lucide-react';
+import { SettingsRowSkeleton } from '@/components/skeletons';
+import { useDelayedFlag } from '@/lib/use-delayed-flag';
 
 interface Playlist {
   id: string;
@@ -26,6 +28,8 @@ export default function SettingsPage() {
   const [newTagColor, setNewTagColor] = useState('#2c5fa8');
   const [addingPlaylist, setAddingPlaylist] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedFlag(loading);
 
   const fetchData = useCallback(async () => {
     const [playlistRes, tagRes] = await Promise.all([
@@ -34,6 +38,7 @@ export default function SettingsPage() {
     ]);
     setPlaylists(await playlistRes.json());
     setTags(await tagRes.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -128,7 +133,13 @@ export default function SettingsPage() {
           </div>
           {error && <div className="cw-banner error" style={{ marginBottom: 12 }}>{error}</div>}
 
-          {playlists.length === 0 ? (
+          {loading && showSkeleton ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SettingsRowSkeleton key={i} />
+              ))}
+            </div>
+          ) : loading ? null : playlists.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--fg-3)', margin: 0 }}>
               No playlists added yet.
             </p>

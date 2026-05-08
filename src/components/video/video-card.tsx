@@ -238,17 +238,25 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
             >
               <Sparkles size={14} strokeWidth={1.75} />
             </button>
-          ) : null}
-          {!hasSummary && video.aiError ? (
+          ) : video.aiError ? (
             <button
               className="cw-icon-btn danger"
               onClick={reprocessAi}
               disabled={reprocessing}
-              title={`AI error: ${video.aiError}`}
+              title={`AI error: ${video.aiError} — click to retry`}
             >
               <RefreshCw size={14} strokeWidth={1.75} className={reprocessing ? 'cw-spin' : ''} />
             </button>
-          ) : null}
+          ) : (
+            <button
+              className="cw-icon-btn"
+              onClick={reprocessAi}
+              disabled={reprocessing}
+              title="Generate AI summary"
+            >
+              <Sparkles size={14} strokeWidth={1.75} className={reprocessing ? 'cw-spin' : ''} />
+            </button>
+          )}
           <button
             className={`cw-icon-btn ${video.notes ? 'notes-active' : ''} ${showNotes ? 'active' : ''}`}
             onClick={() => setShowNotes((s) => !s)}

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { RefreshCw, Copy, ExternalLink, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ThreadCardSkeleton } from '@/components/skeletons';
+import { useDelayedFlag } from '@/lib/use-delayed-flag';
 
 interface SampleVideo {
   id: string;
@@ -40,6 +42,7 @@ interface ClusterDetail {
 export default function ClustersPage() {
   const [clusters, setClusters] = useState<ClusterSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedFlag(loading);
   const [recomputing, setRecomputing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -133,11 +136,13 @@ export default function ClustersPage() {
 
       {error && <div className="cw-banner error" style={{ marginBottom: 16 }}>{error}</div>}
 
-      {loading ? (
-        <div className="cw-empty">
-          <p className="s">Loading…</p>
+      {loading && showSkeleton ? (
+        <div className="cw-threads">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ThreadCardSkeleton key={i} />
+          ))}
         </div>
-      ) : clusters.length === 0 ? (
+      ) : loading ? null : clusters.length === 0 ? (
         <div className="cw-empty">
           <p className="t">No threads yet</p>
           <p className="s">

@@ -8,6 +8,8 @@ import { SearchBar } from './search-bar';
 import { BulkActions } from './bulk-actions';
 import { SyncStatus } from './sync-status';
 import { StatsBar } from './stats-bar';
+import { VideoRowSkeleton } from '@/components/skeletons';
+import { useDelayedFlag } from '@/lib/use-delayed-flag';
 import type { WatchStatus } from '@/types';
 
 interface VideoData {
@@ -33,6 +35,7 @@ type ViewFilter = 'queue' | 'in_progress' | 'watched';
 export function Dashboard() {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useDelayedFlag(loading);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewFilter, setViewFilter] = useState<ViewFilter>('queue');
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,21 +207,13 @@ export function Dashboard() {
         />
       )}
 
-      {loading ? (
+      {loading && showSkeleton ? (
         <div className="cw-videos">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="cw-video">
-              <span />
-              <div className="cw-skel" style={{ width: 160, height: 90 }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
-                <div className="cw-skel" style={{ height: 14, width: '70%' }} />
-                <div className="cw-skel" style={{ height: 12, width: '35%' }} />
-              </div>
-              <span />
-            </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <VideoRowSkeleton key={i} />
           ))}
         </div>
-      ) : videos.length === 0 ? (
+      ) : loading ? null : videos.length === 0 ? (
         <div className="cw-empty">
           <p className="t">
             {searchQuery
