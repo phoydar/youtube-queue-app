@@ -5,7 +5,7 @@ import './globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Queue · A personal video library',
+  title: 'ClipWeave · A personal video library',
   description: 'A reading list, not a queue. Skim, summarize, weave together.',
   icons: {
     icon: [

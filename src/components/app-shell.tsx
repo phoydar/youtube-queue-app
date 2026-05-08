@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="cw-header-inner">
           <a href="/" className="cw-lockup">
             {CW_MARK}
-            <span className="cw-word">Queue</span>
+            <span className="cw-word">ClipWeave</span>
             <span className="cw-word-sub">a personal video library</span>
           </a>
           <nav className="cw-nav">

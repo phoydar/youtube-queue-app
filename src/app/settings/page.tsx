@@ -111,7 +111,7 @@ export default function SettingsPage() {
       <div className="cw-page-head">
         <div>
           <h1>Settings</h1>
-          <p className="sub">Sources, tags, and how Queue syncs.</p>
+          <p className="sub">Sources, tags, and how ClipWeave syncs.</p>
         </div>
       </div>
 
