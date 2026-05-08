@@ -244,7 +244,7 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
               title="AI summary"
               aria-pressed={showSummary}
             >
-              <Sparkles size={14} strokeWidth={1.75} />
+              <Sparkles size={14} strokeWidth={1.75} fill="currentColor" />
             </button>
           ) : video.aiError ? (
             <button
