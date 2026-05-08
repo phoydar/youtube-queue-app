@@ -103,8 +103,16 @@ export function VideoCard({ video, selectable, selected, onSelect, onUpdate }: V
   async function reprocessAi() {
     setReprocessing(true);
     try {
-      await fetch(`/api/ai/videos/${video.id}/process?force=true`, { method: 'POST' });
+      const res = await fetch(`/api/ai/videos/${video.id}/process?force=true`, { method: 'POST' });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert(`AI processing failed: ${data?.error || res.statusText}`);
+      } else if (data?.status === 'skipped') {
+        alert(`AI processing skipped: ${data.reason}`);
+      }
       onUpdate?.();
+    } catch (e) {
+      alert(`AI processing failed: ${e instanceof Error ? e.message : 'unknown error'}`);
     } finally {
       setReprocessing(false);
     }
